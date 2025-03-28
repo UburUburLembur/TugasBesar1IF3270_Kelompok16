@@ -59,6 +59,24 @@ nn = NeuralNetwork(
 nn.train(X_train, y_train, epochs=100, learning_rate=0.01, batch_size=32)
 ```
 
+### Parameter Inisialisasi Model
+Saat membuat objek `NeuralNetwork`, berikut adalah parameter yang dapat digunakan:
+- `input_size` (int): Jumlah fitur input.
+- `hidden_layers` (list[int]): Daftar jumlah neuron pada setiap lapisan tersembunyi.
+- `output_size` (int): Jumlah neuron pada lapisan output.
+- `activations` (list[str]): Daftar fungsi aktivasi untuk setiap lapisan.
+- `loss_function` (str): Jenis fungsi loss yang digunakan (misalnya, "mse", "binary_cross_entropy").
+- `weight_init_methods` (list[str]): Metode inisialisasi bobot untuk setiap lapisan (misalnya, "xavier", "he").
+- `weight_init_params` (list[dict]): Parameter tambahan untuk metode inisialisasi bobot.
+
+### Parameter Pelatihan Model
+Saat memanggil metode `train()`, berikut adalah parameter yang dapat digunakan:
+- `X_train` (numpy.ndarray): Data fitur untuk pelatihan.
+- `y_train` (numpy.ndarray): Label target untuk pelatihan.
+- `epochs` (int): Jumlah iterasi training.
+- `learning_rate` (float): Kecepatan pembelajaran model.
+- `batch_size` (int): Jumlah sampel dalam setiap batch training.
+
 ### 4. Evaluasi dan Prediksi
 ```python
 y_pred = nn.predict(X_test)
@@ -91,4 +109,3 @@ nn.plot_weight_distribution([0, 1])
 - Melakukan pengujian untuk variasi depth dan width dan inisialisasi bobot.
 - Mengerjakan laporan bagian deskripsi persoalan, penjelasan implementasi, deskripsi kelas beserta atribut dan method, pengaruh depth dan width, dan pengaruh inisialisasi bobot.
 - Membuat template laporan.
-
