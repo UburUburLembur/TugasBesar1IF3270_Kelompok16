@@ -92,6 +92,3 @@ nn.plot_weight_distribution([0, 1])
 - Mengerjakan laporan bagian deskripsi persoalan, penjelasan implementasi, deskripsi kelas beserta atribut dan method, pengaruh depth dan width, dan pengaruh inisialisasi bobot.
 - Membuat template laporan.
 
-## Lisensi
-Proyek ini dirilis dengan lisensi MIT.
-
