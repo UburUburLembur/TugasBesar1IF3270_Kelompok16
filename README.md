@@ -64,10 +64,10 @@ Saat membuat objek `NeuralNetwork`, berikut adalah parameter yang dapat digunaka
 - `input_size` (int): Jumlah fitur input.
 - `hidden_layers` (list[int]): Daftar jumlah neuron pada setiap lapisan tersembunyi.
 - `output_size` (int): Jumlah neuron pada lapisan output.
-- `activations` (list[str]): Daftar fungsi aktivasi untuk setiap lapisan.
-- `loss_function` (str): Jenis fungsi loss yang digunakan (misalnya, "mse", "binary_cross_entropy").
-- `weight_init_methods` (list[str]): Metode inisialisasi bobot untuk setiap lapisan (misalnya, "xavier", "he").
-- `weight_init_params` (list[dict]): Parameter tambahan untuk metode inisialisasi bobot.
+- `activations` (list[str]): Daftar fungsi aktivasi untuk setiap lapisan (pilihan : "relu", "linear", "sigmoid", "hyperbolic_tangent", "softmax").
+- `loss_function` (str): Jenis fungsi loss yang digunakan (pilihan : "mse", "binary_cross_entropy", "categorical_cross_entropy").
+- `weight_init_methods` (list[str]): Metode inisialisasi bobot untuk setiap lapisan (pilihan : "zero", "random_uniform", "random_normal", "xavier", "he").
+- `weight_init_params` (list[dict]): Parameter tambahan untuk metode inisialisasi bobot. Untuk metode inisialisasi "random_uniform" terdapat parameter "upper" dan "lower". Kemudian, untuk metode inisialisasi "random_normal" terdapat parameter "mean" dan "variance". Terdapat parameter "seed" untuk metode inisialisasi "random_uniform", "random_normal", "xavier", dan "he".
 
 ### Parameter Pelatihan Model
 Saat memanggil metode `train()`, berikut adalah parameter yang dapat digunakan:
