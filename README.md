@@ -1,4 +1,4 @@
-# Tugas Besar IF3270 Pembelajaran Mesin Feedforward Neural Network
+# Tugas Besar 1 IF3270 Pembelajaran Mesin Feedforward Neural Network
 
 Repository ini berisi implementasi jaringan saraf tiruan (Artificial Neural Network) dari awal menggunakan Python dan pustaka seperti NumPy, Matplotlib, dan Scikit-learn.
 
