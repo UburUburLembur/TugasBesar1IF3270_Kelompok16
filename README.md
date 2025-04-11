@@ -53,7 +53,9 @@ nn = NeuralNetwork(
     activations=["relu", "sigmoid"],
     loss_function="binary_cross_entropy",
     weight_init_methods=["xavier", "xavier"],
-    weight_init_params=[{}, {}]
+    weight_init_params=[{}, {}],
+    regularization="l1",
+    lambda=0.0001,
 )
 
 nn.train(X_train, y_train, epochs=100, learning_rate=0.01, batch_size=32)
