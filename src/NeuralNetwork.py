@@ -5,12 +5,14 @@ import viznet
 import os
 
 class NeuralNetwork:
-  def __init__(self, input_size, hidden_layers, output_size, activations, loss_function, weight_init_methods, weight_init_params):
-    self.activations = [getattr(self, act) for act in activations] 
-    self.activation_derivatives = [getattr(self, act + "_derivative") for act in activations] 
-    self.loss_function = getattr(self, loss_function) 
-    self.loss_derivative = getattr(self, loss_function + "_derivative") 
+  def __init__(self, input_size, hidden_layers, output_size, activations, loss_function, weight_init_methods, weight_init_params, regularization, lambda_reg):
+    self.activations = [getattr(self, act) for act in activations]
+    self.activation_derivatives = [getattr(self, act + "_derivative") for act in activations]
+    self.loss_function = getattr(self, loss_function)
+    self.loss_derivative = getattr(self, loss_function + "_derivative")
     self.history = {"train_loss": [], "val_loss": []}
+    self.regularization = regularization
+    self.lambda_reg = lambda_reg
 
     layer_sizes = [input_size] + hidden_layers + [output_size]
     self.weights = [self.initialize_weights((layer_sizes[i], layer_sizes[i + 1]), method=weight_init_methods[i], **weight_init_params[i]) for i in range(len(layer_sizes) - 1)]
@@ -22,7 +24,6 @@ class NeuralNetwork:
     activations = [x]
     for w, b, act in zip(self.weights, self.biases, self.activations):
       x = act(np.dot(x, w) + b)
-      #print(x.shape)
       activations.append(x)
     return activations
 
@@ -36,8 +37,13 @@ class NeuralNetwork:
       deltas.insert(0, np.dot(deltas[0], self.weights[i].T) * self.activation_derivatives[i](activations[i]))
 
     for i in range(len(self.weights)):
-      self.weights[i] -= learning_rate * np.dot(activations[i].T, deltas[i]) / len(y)
-      self.biases[i] -= learning_rate * np.mean(deltas[i], axis=0)
+      grad_w = np.dot(activations[i].T, deltas[i]) / len(y)
+      if self.regularization == "l2":
+          grad_w += self.lambda_reg * self.weights[i]
+      elif self.regularization == "l1":
+          grad_w += self.lambda_reg * np.sign(self.weights[i])
+      self.weight_gradients[i] += grad_w
+      self.weights[i] -= learning_rate * grad_w
       self.biases[i] -= learning_rate * np.mean(deltas[i], axis=0)
 
   def train(self, X, y, batch_size=32, learning_rate=0.1, epochs=100, verbose=1, X_val=None, y_val=None):
@@ -51,7 +57,11 @@ class NeuralNetwork:
       for i in range(0, len(X), batch_size):
         X_batch, y_batch = X[i:min(i + batch_size, len(X))], y[i:min(i + batch_size, len(y))]
         activations = self.forward(X_batch)
-        loss += np.mean(self.loss_function(y_batch, activations[-1]))
+        batch_loss = np.mean(self.loss_function(y_batch, activations[-1]))
+        if self.regularization is not None:
+            batch_loss += self.lambda_reg * self.compute_regularization()
+        loss += batch_loss
+        #loss += np.mean(self.loss_function(y_batch, activations[-1]))
         self.backward(activations, y_batch, learning_rate)
 
       train_loss = loss / (len(X) / batch_size)
@@ -64,11 +74,18 @@ class NeuralNetwork:
       if verbose == 1:
         if epoch % t == 0:
           print(f"Epoch {epoch}/{epochs} - Train Loss: {train_loss:.4f} - Val Loss: {val_loss if X_val is not None else 'N/A'}")
+  def compute_regularization(self):
+      if self.regularization == "l2":
+        return sum(np.sum(np.square(w)) for w in self.weights)
+      elif self.regularization == "l1":
+        return sum(np.sum(np.abs(w)) for w in self.weights)
+      else:
+        return 0
 
   def predict(self, X):
     return self.forward(X)[-1]
 
-  def plot_loss(self, title = "Fungsi Loss"):
+  def plot_loss(self, title):
     plt.plot(self.history["train_loss"], label="Train Loss")
     if self.history["val_loss"]:
       plt.plot(self.history["val_loss"], label="Validation Loss")
@@ -118,7 +135,7 @@ class NeuralNetwork:
   def sigmoid_derivative(self, o):
     return o * (1 - o)
 
-  def hyperbolic_tangent_derivative(self, o):
+  def hyperbolic_tangent_derivative(self, o: float):
     return (2/(np.exp(o) + np.exp(-o)))**2
 
   def softmax_derivative(self, o):
@@ -131,7 +148,8 @@ class NeuralNetwork:
     return -np.mean(target * np.log(out + 1e-8) + (1 - target) * np.log(1 - out + 1e-8))
 
   def categorical_cross_entropy(self, out, target):
-    return -np.mean(np.sum(target * np.log(out + 1e-9), axis=1))
+      return -np.mean(np.sum(target * np.log(out + 1e-9), axis=1))
+
 
   def linear(self, net):
     return net
@@ -146,109 +164,107 @@ class NeuralNetwork:
     return np.tanh(net)
 
   def softmax(self, net):
-    e_net = np.exp(net - np.max(net, axis=1, keepdims=True))
-    return e_net / np.sum(e_net, axis=1, keepdims=True)
+      e_net = np.exp(net - np.max(net, axis=1, keepdims=True))
+      return e_net / np.sum(e_net, axis=1, keepdims=True)
 
   def plot_weight_distribution(self, layers):
-    plt.figure(figsize=(12, 4 * len(layers)))
+      plt.figure(figsize=(12, 4 * len(layers)))
 
-    for i, layer_idx in enumerate(layers, start=1):
-      w = self.weights[layer_idx]
-      w_flat = w.flatten()
+      for i, layer_idx in enumerate(layers, start=1):
+          w = self.weights[layer_idx]
+          w_flat = w.flatten()
 
-      plt.subplot(len(layers), 1, i)
-      plt.hist(w_flat, bins=30, alpha=0.7, color='blue')
-      plt.title(f"Weight Distribution - Layer {layer_idx}")
-      plt.xlabel("Weight Value")
-      plt.ylabel("Frequency")
+          plt.subplot(len(layers), 1, i)
+          plt.hist(w_flat, bins=30, alpha=0.7, color='blue')
+          plt.title(f"Weight Distribution - Layer {layer_idx}")
+          plt.xlabel("Weight Value")
+          plt.ylabel("Frequency")
 
-    plt.tight_layout()
-    plt.show()
+      plt.tight_layout()
+      plt.show()
 
   def display_graph(self):
-    plt.figure(figsize=(24, 16))
+      plt.figure(figsize=(24, 16))
 
-    grid = viznet.Grid((150.0, 80.0))
-    brush = viznet.NodeBrush('basic', size=20, color='lightblue')
-    edge_brush = viznet.EdgeBrush('->', lw=0.1, color='black')
+      grid = viznet.Grid((150.0, 80.0))
+      brush = viznet.NodeBrush('basic', size=20, color='lightblue')
+      edge_brush = viznet.EdgeBrush('->', lw=0.1, color='black')
 
-    NODE_FONT_SIZE = 7
-    EDGE_FONT_SIZE = 8
+      NODE_FONT_SIZE = 7
+      EDGE_FONT_SIZE = 8
 
-    orig_layer_sizes = [self.weights[0].shape[0]] + [w.shape[1] for w in self.weights]
-    num_layers = len(orig_layer_sizes)
+      orig_layer_sizes = [self.weights[0].shape[0]] + [w.shape[1] for w in self.weights]
+      num_layers = len(orig_layer_sizes)
 
-    layers_nodes = []
+      layers_nodes = []
 
-    for layer_index in range(num_layers):
-      nodes = []
-      if layer_index < num_layers - 1:
-        bias_node = brush >> grid[layer_index, 0]
-        bias_val = self.biases[layer_index - 1][0, 0] if layer_index > 0 else self.biases[0][0, 0]
-        bias_node.text(f"b_{layer_index}", fontsize=NODE_FONT_SIZE)
-        nodes.append(bias_node)
-        for neuron_index in range(orig_layer_sizes[layer_index]):
-          node = brush >> grid[layer_index, neuron_index + 1]
-          if layer_index == 0:
-            node.text(f"x_{neuron_index+1}", fontsize=NODE_FONT_SIZE)
+      for layer_index in range(num_layers):
+          nodes = []
+          if layer_index < num_layers - 1:
+              bias_node = brush >> grid[layer_index, 0]
+              bias_val = self.biases[layer_index - 1][0, 0] if layer_index > 0 else self.biases[0][0, 0]
+              bias_node.text(f"b_{layer_index}", fontsize=NODE_FONT_SIZE)
+              nodes.append(bias_node)
+              for neuron_index in range(orig_layer_sizes[layer_index]):
+                  node = brush >> grid[layer_index, neuron_index + 1]
+                  if layer_index == 0:
+                      node.text(f"x_{neuron_index+1}", fontsize=NODE_FONT_SIZE)
+                  else:
+                      node.text(f"N_{layer_index}_{neuron_index+1}", fontsize=NODE_FONT_SIZE)
+                  nodes.append(node)
           else:
-            node.text(f"N_{layer_index}_{neuron_index+1}", fontsize=NODE_FONT_SIZE)
-          nodes.append(node)
-      else:
-        for neuron_index in range(orig_layer_sizes[layer_index]):
-          node = brush >> grid[layer_index, neuron_index]
-          node.text(f"Out_{neuron_index+1}", fontsize=NODE_FONT_SIZE)
-          nodes.append(node)
-      
-      layers_nodes.append(nodes)
+              for neuron_index in range(orig_layer_sizes[layer_index]):
+                  node = brush >> grid[layer_index, neuron_index]
+                  node.text(f"Out_{neuron_index+1}", fontsize=NODE_FONT_SIZE)
+                  nodes.append(node)
+          layers_nodes.append(nodes)
 
-    for layer_index in range(len(layers_nodes) - 1):
-      weight_matrix = self.weights[layer_index]
-      grad_matrix = self.weight_gradients[layer_index]
-      current_nodes = layers_nodes[layer_index]
-      next_nodes = layers_nodes[layer_index + 1]
+      for layer_index in range(len(layers_nodes) - 1):
+          weight_matrix = self.weights[layer_index]
+          grad_matrix = self.weight_gradients[layer_index]
+          current_nodes = layers_nodes[layer_index]
+          next_nodes = layers_nodes[layer_index + 1]
 
-      start_index = 1  if layer_index < len(layers_nodes) - 1 else 0
-      next_start = 1 if (layer_index + 1 < len(layers_nodes) - 1) else 0
+          start_index = 1  if layer_index < len(layers_nodes) - 1 else 0
+          next_start = 1 if (layer_index + 1 < len(layers_nodes) - 1) else 0
 
-      for m, node_from in enumerate(current_nodes[start_index:]):
-        for j, node_to in enumerate(next_nodes[next_start:]):
-          w_val = weight_matrix[m, j]
-          g_val = grad_matrix[m, j]
-          edge = edge_brush >> (node_from, node_to)
-          edge.text(f"w:{w_val:.2f}", position="left", fontsize=EDGE_FONT_SIZE)
+          for m, node_from in enumerate(current_nodes[start_index:]):
+              for j, node_to in enumerate(next_nodes[next_start:]):
+                  w_val = weight_matrix[m, j]
+                  g_val = grad_matrix[m, j]
+                  edge = edge_brush >> (node_from, node_to)
+                  edge.text(f"w:{w_val:.2f}", position="left", fontsize=EDGE_FONT_SIZE)
 
-          edge.text(f"g:{g_val:.2f}", position="right", fontsize=EDGE_FONT_SIZE)
+                  edge.text(f"g:{g_val:.2f}", position="right", fontsize=EDGE_FONT_SIZE)
 
 
-      if layer_index < num_layers - 1:
-        bias_node = current_nodes[0]  # Bias node berada di indeks 0
-        next_start = 1 if layer_index + 1 < num_layers - 1 else 0
-        for j, node_to in enumerate(next_nodes[next_start:]):
-          bias_weight = self.biases[layer_index][0, j]
-          edge = edge_brush >> (bias_node, node_to)
-          edge.text(f"b:{bias_weight:.2f}", "center", fontsize=EDGE_FONT_SIZE)
-    
-    plt.title("Representasi Graf")
-    plt.show()
+          if layer_index < num_layers - 1:
+              bias_node = current_nodes[0]  # Bias node berada di indeks 0
+              next_start = 1 if layer_index + 1 < num_layers - 1 else 0
+              for j, node_to in enumerate(next_nodes[next_start:]):
+                  bias_weight = self.biases[layer_index][0, j]
+                  edge = edge_brush >> (bias_node, node_to)
+                  edge.text(f"b:{bias_weight:.2f}", "center", fontsize=EDGE_FONT_SIZE)
+      plt.title("Representasi Graf")
+      plt.show()
 
 
   def plot_gradient_distribution(self, layers):
-    plt.figure(figsize=(12, 4 * len(layers)))
+      plt.figure(figsize=(12, 4 * len(layers)))
 
-    for i, layer_idx in enumerate(layers, start=1):
-      g = self.weight_gradients[layer_idx]
-      g_flat = g.flatten()
+      for i, layer_idx in enumerate(layers, start=1):
+          g = self.weight_gradients[layer_idx]
+          g_flat = g.flatten()
 
-      plt.subplot(len(layers), 1, i)
-      plt.hist(g_flat, bins=30, alpha=0.7, color='red')
-      plt.title(f"Gradient Distribution - Layer {layer_idx}")
-      plt.xlabel("Gradient Value")
-      plt.ylabel("Frequency")
+          plt.subplot(len(layers), 1, i)
+          plt.hist(g_flat, bins=30, alpha=0.7, color='red')
+          plt.title(f"Gradient Distribution - Layer {layer_idx}")
+          plt.xlabel("Gradient Value")
+          plt.ylabel("Frequency")
 
-    plt.tight_layout()
-    plt.show()
-  
+      plt.tight_layout()
+      plt.show()
+
   def save_model(self, filename="ann_model.npz"):
     np.savez(filename, **{f"weights_{i}": w for i, w in enumerate(self.weights)},
                       **{f"biases_{i}": b for i, b in enumerate(self.biases)})
