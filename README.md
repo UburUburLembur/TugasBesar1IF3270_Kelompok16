@@ -68,6 +68,8 @@ Saat membuat objek `NeuralNetwork`, berikut adalah parameter yang dapat digunaka
 - `loss_function` (str): Jenis fungsi loss yang digunakan (pilihan : "mse", "binary_cross_entropy", "categorical_cross_entropy").
 - `weight_init_methods` (list[str]): Metode inisialisasi bobot untuk setiap lapisan (pilihan : "zero", "random_uniform", "random_normal", "xavier", "he").
 - `weight_init_params` (list[dict]): Parameter tambahan untuk metode inisialisasi bobot. Untuk metode inisialisasi "random_uniform" terdapat parameter "upper" dan "lower". Kemudian, untuk metode inisialisasi "random_normal" terdapat parameter "mean" dan "variance". Terdapat parameter "seed" untuk metode inisialisasi "random_uniform", "random_normal", "xavier", dan "he".
+- `regularization` (str): Parameter untuk menentukan metode regularisasi yang dipakai (pilihan : "l1", "l2").
+- `lambda` (float): parameter regulasi yang mengontrol seberapa kuat kontribusi dari term regularisasi terhadap total loss dalam model machine learning.
 
 ### Parameter Pelatihan Model
 Saat memanggil metode `train()`, berikut adalah parameter yang dapat digunakan:
@@ -100,12 +102,12 @@ nn.plot_weight_distribution([0, 1])
 ### Muhammad Zakkiy (10122074)
 - Mengerjakan syntax bagian forward propagation, backward propagation, train, predict, plot_loss, initialize_weights, load dataset mnist_784 dan menggunakan method fetch_openml.
 - Melakukan pengujian untuk variasi fungsi aktivasi, learning rate, dan perbandingan dengan library sklearn MLP.
-- Mengerjakan laporan bagian penjelasan implementasi, penjelasan forward propagation, penjelasan backward propagation dan weight update, pengaruh fungsi aktivasi, pengaruh learning rate, perbandingan dengan library sklearn, dan kesimpulan serta saran.
+- Mengerjakan laporan bagian penjelasan implementasi, penjelasan forward propagation, penjelasan backward propagation dan weight update, pengaruh fungsi aktivasi, pengaruh learning rate, perbandingan dengan library sklearn, pengaruh regularisasi dan kesimpulan serta saran.
 - Melakukan fiksasi syntax.
 - Membuat repository github.
 
 ### Ghaisan Zaki Pratama (10122078)
-- Mengerjakan syntax bagian fungsi aktivasi, turunan fungsi aktivasi, loss function, turunan loss function, plot bobot, plot distribusi bobot, representasi graf.
+- Mengerjakan syntax bagian fungsi aktivasi, turunan fungsi aktivasi, loss function, turunan loss function, plot bobot, plot distribusi bobot, representasi graf, dan regularisasi.
 - Melakukan pengujian untuk variasi depth dan width dan inisialisasi bobot.
 - Mengerjakan laporan bagian deskripsi persoalan, penjelasan implementasi, deskripsi kelas beserta atribut dan method, pengaruh depth dan width, dan pengaruh inisialisasi bobot.
 - Membuat template laporan.
